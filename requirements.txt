@@ -7,3 +7,8 @@ python-dotenv
 
 sqlalchemy
 psycopg[binary]
+
+pypdf
+python-multipart
+pgvector
+fastembed

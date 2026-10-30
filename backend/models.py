@@ -36,3 +36,15 @@ class Message(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True),server_default=func.now())
 
     conversation: Mapped[Conversation] = relationship(back_populates="messages")
+
+
+
+class Document(Base):
+
+    __tablename__ = "documents"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    filename: Mapped[str] = mapped_column(String(255))
+    page_count: Mapped[int]
+    content: Mapped[str] = mapped_column(Text)   # the whole text, with [Page N] markers
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

@@ -19,3 +19,23 @@ class ChatResponse(BaseModel):
     model:str
     tokens_used: int
 
+# DOCUMENTS
+class DocumentOut(BaseModel):
+    id: int
+    filename: str
+    page_count: int
+    characters: int
+
+class AskRequest(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+    document_id: int
+    question: str = Field(min_length=1, max_length=MAX_MESSAGE_CHARS)
+
+
+class AskResponse(BaseModel):
+    answer: str
+    method: str   # "prompt" now, "rag" later
+    model: str
+    input_tokens: int
+    output_tokens: int
+    latency_ms: int

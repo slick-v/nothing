@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Streaming vs non-streaming</title>
+  <title>Streaming Chat</title>
   <style>
     :root {
       --bg: #0f1115;
@@ -19,7 +19,7 @@
     body { margin: 0; font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); }
     header { display: flex; gap: 8px; padding: 12px 16px; }
     textarea {
-      flex: 1; resize: none; padding: 10px; border-radius: 8px;
+      flex: 1; min-width: 0; resize: none; padding: 10px; border-radius: 8px;
       border: 1px solid var(--border); background: var(--panel); color: var(--text); font: inherit;
     }
     button {
@@ -28,7 +28,7 @@
     }
     button.secondary { background: var(--border); color: var(--text); }
     button:disabled { opacity: 0.5; cursor: wait; }
-    main { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 0 16px 16px; }
+    main { padding: 0 16px 16px; }
     section {
       display: flex; flex-direction: column; height: calc(100vh - 90px);
       background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
@@ -39,41 +39,36 @@
     .msg { margin: 0 0 10px; padding: 8px 10px; border-radius: 8px; line-height: 1.45; white-space: pre-wrap; }
     .user { background: var(--user); }
     .error { color: var(--error); }
-    @media (max-width: 700px) {
-      main { grid-template-columns: 1fr; }
-      section { height: 60vh; }
-    }
   </style>
 </head>
 <body>
   <header>
-    <textarea id="input" rows="2" placeholder="Ask something long, e.g. Explain how HTTPS works in 300 words"></textarea>
-    <button id="send">Send to both</button>
+    <textarea id="input" rows="2" placeholder="Ask something, e.g. Explain how HTTPS works in 300 words"></textarea>
+    <button id="send">Send</button>
     <button id="reset" class="secondary">New chat</button>
   </header>
 
   <main>
     <section>
-      <h2>Non-streaming · POST /chat</h2>
-      <div class="stats" id="stats-normal">First text: – · Total: – · Tokens: –</div>
-      <div class="log" id="log-normal"></div>
-    </section>
-    <section>
       <h2>Streaming · POST /chat/stream</h2>
-      <div class="stats" id="stats-stream">First text: – · Total: – · Tokens: –</div>
-      <div class="log" id="log-stream"></div>
+      <div class="stats" id="stats">First text: – · Total: – · Tokens: –</div>
+      <div class="log" id="log"></div>
     </section>
   </main>
 
   <script>
-    // each panel has its own conversation in the database
-    const conversations = { normal: null, stream: null };
+    const EMPTY_STATS = "First text: – · Total: – · Tokens: –";
+    const input = document.getElementById("input");
+    const sendButton = document.getElementById("send");
+    const log = document.getElementById("log");
+    const stats = document.getElementById("stats");
 
-    function addMessage(panel, text, cls) {
+    let conversationId = null;  // null = the next message starts a new conversation
+
+    function addMessage(text, cls) {
       const div = document.createElement("div");
       div.className = "msg " + cls;
       div.textContent = text;  // textContent, never innerHTML: model output can't inject HTML
-      const log = document.getElementById("log-" + panel);
       log.appendChild(div);
       log.scrollTop = log.scrollHeight;
       return div;
@@ -84,50 +79,22 @@
       bubble.classList.add("error");
     }
 
-    function showStats(panel, firstMs, totalMs, tokens) {
-      document.getElementById("stats-" + panel).textContent =
-        `First text: ${firstMs} ms · Total: ${totalMs} ms · Tokens: ${tokens}`;
-    }
-
     async function errorText(res) {
       try { return (await res.json()).detail; } catch { return `HTTP ${res.status}`; }
     }
 
-    function post(url, message, conversationId) {
-      return fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message, conversation_id: conversationId }),
-      });
-    }
-
-    // Non-streaming: nothing to show until the whole reply has arrived
-    async function sendNormal(message) {
-      addMessage("normal", message, "user");
-      const bubble = addMessage("normal", "…waiting for the full reply", "assistant");
-      const start = performance.now();
-      try {
-        const res = await post("/chat", message, conversations.normal);
-        if (!res.ok) return showError(bubble, await errorText(res));
-        const data = await res.json();
-        const ms = Math.round(performance.now() - start);
-        bubble.textContent = data.reply;
-        conversations.normal = data.conversation_id;
-        showStats("normal", ms, ms, data.tokens_used);  // the first text arrives with the last
-      } catch (err) {
-        showError(bubble, "Network error: " + err.message);
-      }
-    }
-
-    // Streaming: read the body piece by piece; each line is one JSON event
-    async function sendStream(message) {
-      addMessage("stream", message, "user");
-      const bubble = addMessage("stream", "", "assistant");
-      const log = document.getElementById("log-stream");
+    // read the body piece by piece; each line is one JSON event
+    async function sendMessage(message) {
+      addMessage(message, "user");
+      const bubble = addMessage("", "assistant");
       const start = performance.now();
       let firstMs = null;
       try {
-        const res = await post("/chat/stream", message, conversations.stream);
+        const res = await fetch("/chat/stream", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message, conversation_id: conversationId }),
+        });
         if (!res.ok) return showError(bubble, await errorText(res));
 
         const reader = res.body.getReader();
@@ -148,28 +115,25 @@
               bubble.textContent += event.text;
               log.scrollTop = log.scrollHeight;
             } else if (event.type === "done") {
-              conversations.stream = event.conversation_id;
-              showStats("stream", firstMs, Math.round(performance.now() - start), event.tokens_used);
+              conversationId = event.conversation_id;
+              const totalMs = Math.round(performance.now() - start);
+              stats.textContent = `First text: ${firstMs} ms · Total: ${totalMs} ms · Tokens: ${event.tokens_used}`;
             } else if (event.type === "error") {
-              addMessage("stream", event.detail, "error");
+              addMessage(event.detail, "error");
             }
           }
         }
       } catch (err) {
-        addMessage("stream", "Network error: " + err.message, "error");
+        addMessage("Network error: " + err.message, "error");
       }
     }
-
-    const input = document.getElementById("input");
-    const sendButton = document.getElementById("send");
 
     async function send() {
       const message = input.value.trim();
       if (!message) return;
       input.value = "";
       sendButton.disabled = true;
-      // same question to both endpoints at the same moment
-      await Promise.all([sendNormal(message), sendStream(message)]);
+      await sendMessage(message);
       sendButton.disabled = false;
       input.focus();
     }
@@ -183,12 +147,9 @@
     });
 
     document.getElementById("reset").addEventListener("click", () => {
-      conversations.normal = null;
-      conversations.stream = null;
-      for (const panel of ["normal", "stream"]) {
-        document.getElementById("log-" + panel).innerHTML = "";
-        document.getElementById("stats-" + panel).textContent = "First text: – · Total: – · Tokens: –";
-      }
+      conversationId = null;
+      log.innerHTML = "";
+      stats.textContent = EMPTY_STATS;
     });
   </script>
 </body>

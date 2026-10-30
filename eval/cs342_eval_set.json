@@ -1,0 +1,186 @@
+{
+  "document": "cs342_handbook.pdf",
+  "how_to_grade": "An answer is correct if, for every group in must_include, it contains at least one of the group's strings (ignoring case). An answer has the right citation if it cites at least one page listed in pages. For questions with answerable=false, the pages list is empty and there is nothing to cite.",
+  "questions": [
+    {
+      "id": "cs342_q01",
+      "type": "fact",
+      "question": "When are the instructor's office hours?",
+      "expected_answer": "Tuesdays and Thursdays, 15:30-17:00.",
+      "must_include": [["Tuesday"], ["Thursday"], ["15:30"], ["17:00"]],
+      "pages": [1],
+      "answerable": true
+    },
+    {
+      "id": "cs342_q02",
+      "type": "fact",
+      "question": "How many GPU-hours does each final project team receive on the Osprey cluster?",
+      "expected_answer": "40 GPU-hours.",
+      "must_include": [["40"]],
+      "pages": [8],
+      "answerable": true
+    },
+    {
+      "id": "cs342_q03",
+      "type": "table",
+      "question": "What letter grade does an overall score of 72 receive?",
+      "expected_answer": "B (70-84).",
+      "must_include": [["B"]],
+      "pages": [3],
+      "answerable": true
+    },
+    {
+      "id": "cs342_q04",
+      "type": "similar_facts",
+      "question": "In which room is the midterm exam held?",
+      "expected_answer": "Room 3.07, Marlow Building.",
+      "must_include": [["3.07"]],
+      "pages": [5],
+      "answerable": true
+    },
+    {
+      "id": "cs342_q05",
+      "type": "similar_facts",
+      "question": "Where and when are the weekly lab sections held?",
+      "expected_answer": "Fridays, 13:00-15:00, in Room 1.12, Marlow Building.",
+      "must_include": [["Friday"], ["13:00"], ["1.12"]],
+      "pages": [10],
+      "answerable": true
+    },
+    {
+      "id": "cs342_q06",
+      "type": "similar_facts",
+      "question": "When is Assignment 3 due?",
+      "expected_answer": "Friday, March 26, 2027, at 23:59.",
+      "must_include": [["March 26"]],
+      "pages": [6],
+      "answerable": true
+    },
+    {
+      "id": "cs342_q07",
+      "type": "similar_facts",
+      "question": "How long before the deadline must an extension be requested?",
+      "expected_answer": "At least 48 hours before the deadline.",
+      "must_include": [["48 hours"]],
+      "pages": [7],
+      "answerable": true
+    },
+    {
+      "id": "cs342_q08",
+      "type": "similar_facts",
+      "question": "Which teaching assistant handles questions about grading?",
+      "expected_answer": "Priya Natarajan.",
+      "must_include": [["Priya"]],
+      "pages": [10],
+      "answerable": true
+    },
+    {
+      "id": "cs342_q09",
+      "type": "rule",
+      "question": "Can grace days be used for the final project report?",
+      "expected_answer": "No. Grace days can be used on the four assignments only.",
+      "must_include": [["no", "cannot", "can't"]],
+      "pages": [7],
+      "answerable": true
+    },
+    {
+      "id": "cs342_q10",
+      "type": "rule",
+      "question": "A student has an overall score of 60 but scored 35% on the final project. Do they pass the course?",
+      "expected_answer": "No. Students must score at least 40% on the final project to pass, regardless of their overall score.",
+      "must_include": [["no", "not", "fail"], ["40%", "40 percent"]],
+      "pages": [3],
+      "answerable": true
+    },
+    {
+      "id": "cs342_q11",
+      "type": "rule",
+      "question": "How many in-class quizzes can a student miss without affecting their grade?",
+      "expected_answer": "Up to 2, because only the best 8 of the 10 quizzes count.",
+      "must_include": [["2", "two"]],
+      "pages": [3],
+      "answerable": true
+    },
+    {
+      "id": "cs342_q12",
+      "type": "calculation",
+      "question": "A student with all 3 grace days available submits an assignment 5 days late and uses all of their grace days. What percentage of the assignment's marks is deducted?",
+      "expected_answer": "30%. Three days are covered by grace days, and the other 2 days cost 15% each.",
+      "must_include": [["30%", "30 percent"]],
+      "pages": [7],
+      "answerable": true
+    },
+    {
+      "id": "cs342_q13",
+      "type": "calculation",
+      "question": "A student with all 3 grace days available submits an assignment 7 days late and uses all of their grace days. What mark do they receive?",
+      "expected_answer": "A mark of zero, because the submission is still more than 3 days late after grace days are used.",
+      "must_include": [["zero", "0%", "mark of 0"]],
+      "pages": [7],
+      "answerable": true
+    },
+    {
+      "id": "cs342_q14",
+      "type": "multi_page",
+      "question": "Together, what percentage of the final grade do the midterm exam and the project poster make up?",
+      "expected_answer": "30% (midterm 20% + poster 10%).",
+      "must_include": [["30%", "30 percent"]],
+      "pages": [3, 8],
+      "answerable": true
+    },
+    {
+      "id": "cs342_q15",
+      "type": "multi_page",
+      "question": "Which of these can a student use during the midterm exam: handwritten notes, a calculator, a phone, an AI assistant?",
+      "expected_answer": "One A4 sheet of handwritten notes (both sides) and a calculator are allowed. Phones and AI tools are not allowed.",
+      "must_include": [["handwritten", "notes"], ["calculator"], ["phone"], ["AI"]],
+      "pages": [5, 9],
+      "answerable": true
+    },
+    {
+      "id": "cs342_q16",
+      "type": "multi_page",
+      "question": "During which week of the course schedule is Assignment 1 due?",
+      "expected_answer": "Week 4. Assignment 1 is due on Friday, February 5, and Week 4 starts on February 1.",
+      "must_include": [["Week 4"]],
+      "pages": [4, 6],
+      "answerable": true
+    },
+    {
+      "id": "cs342_q17",
+      "type": "not_in_document",
+      "question": "What is the tuition fee for CS 342?",
+      "expected_answer": "Not in the document.",
+      "must_include": [["Not in the document"]],
+      "pages": [],
+      "answerable": false
+    },
+    {
+      "id": "cs342_q18",
+      "type": "not_in_document",
+      "question": "When is the final exam?",
+      "expected_answer": "Not in the document.",
+      "must_include": [["Not in the document"]],
+      "pages": [],
+      "answerable": false
+    },
+    {
+      "id": "cs342_q19",
+      "type": "not_in_document",
+      "question": "When are Rafael Mendes's office hours?",
+      "expected_answer": "Not in the document.",
+      "must_include": [["Not in the document"]],
+      "pages": [],
+      "answerable": false
+    },
+    {
+      "id": "cs342_q20",
+      "type": "not_in_document",
+      "question": "What is the maximum number of extra GPU-hours a team can apply for?",
+      "expected_answer": "Not in the document.",
+      "must_include": [["Not in the document"]],
+      "pages": [],
+      "answerable": false
+    }
+  ]
+}

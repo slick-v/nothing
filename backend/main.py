@@ -1,11 +1,12 @@
 import itertools
 import json
 import logging
+import time
 from contextlib import asynccontextmanager
 from pathlib import Path
 import groq
 
-from fastapi import Depends,FastAPI,HTTPException
+from fastapi import Depends,FastAPI, File,HTTPException,UploadFile
 from fastapi.responses import FileResponse, JSONResponse,StreamingResponse
 from sqlalchemy import select,text
 from sqlalchemy.orm import Session
@@ -13,14 +14,17 @@ from sqlalchemy.orm import Session
 import models #noqa registers the tables on base before create_all
 from config import settings
 from db import Base, SessionLocal,engine, get_db
-from llm import get_reply, stream_reply
-from schemas import ChatResponse,ChatRequest
+from llm import answer_from_context,get_reply, stream_reply
+from pdf import PdfError, extract_text
+from schemas import AskRequest,AskResponse,ChatResponse,ChatRequest,DocumentOut
 
 
 logger = logging.getLogger(__name__)
 # what users see; the real error only goes to the server logs
 LLM_ERROR = "The AI service isn't available right now. Please try again in a moment."
 FRONTEND_PAGE = Path(__file__).resolve().parents[1] / "frontend" / "index.html"
+MAX_PDF_BYTES = 10 * 1024 * 1024   # 10 MB
+
 
 @asynccontextmanager
 async def lifespan(app:FastAPI):
@@ -198,3 +202,60 @@ def chat_stream(request: ChatRequest, db: Session = Depends(get_db)):
         })
 
     return StreamingResponse(generate(), media_type="application/x-ndjson")
+
+
+@app.post("/documents", response_model=DocumentOut, status_code=201)
+def upload_document(file: UploadFile = File(...), db:Session = Depends(get_db)):
+    data = file.file.read(MAX_PDF_BYTES + 1)
+    if len(data) > MAX_PDF_BYTES:
+        raise HTTPException(status_code=413, detail="PDF is too big. The limit is 10 MB.")
+
+    try:
+        content, page_count = extract_text(data)
+    except PdfError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+
+    document = models.Document(filename=file.filename or "unnamed.pdf", page_count=page_count, content=content)
+    db.add(document)
+    db.commit()
+    return DocumentOut(
+        id=document.id,
+        filename=document.filename,
+        page_count=document.page_count,
+        characters=len(document.content),
+    )
+
+
+
+
+@app.post("/ask/prompt", response_model=AskResponse)
+def ask_prompt(request: AskRequest, db: Session = Depends(get_db)):
+    """Baseline, no RAG: the whole document goes into the prompt on every question."""
+    document = db.get(models.Document, request.document_id)
+    if document is None:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    start = time.perf_counter()
+    try:
+        answer, input_tokens, output_tokens = answer_from_context(document.content, request.question)
+    except groq.APIStatusError as e:
+        if e.status_code in (413, 429):
+            logger.warning("Groq token or rate limit: %s", e.message)
+            raise HTTPException(
+                status_code=e.status_code,
+                detail="This is over your Groq token limit. Wait a minute, or lower MAX_TOKENS.",
+            )
+        logger.exception("LLM call failed for document %s", document.id)
+        raise HTTPException(status_code=502, detail=LLM_ERROR)
+    except (groq.APIError, RuntimeError):
+        logger.exception("LLM call failed for document %s", document.id)
+        raise HTTPException(status_code=502, detail=LLM_ERROR)
+
+    return AskResponse(
+        answer=answer,
+        method="prompt",
+        model=settings.model_name,
+        input_tokens=input_tokens,
+        output_tokens=output_tokens,
+        latency_ms=int((time.perf_counter() - start) * 1000),
+    )
