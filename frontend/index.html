@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Streaming Chat</title>
+  <title>Document Chat</title>
   <style>
     :root {
       --bg: #0f1115;
@@ -16,54 +16,140 @@
       --error: #ff6b6b;
     }
     * { box-sizing: border-box; }
-    body { margin: 0; font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); }
+    body {
+      display: flex; flex-direction: column; height: 100vh; height: 100dvh; margin: 0;
+      font-family: system-ui, sans-serif; background: var(--bg); color: var(--text);
+    }
     header { display: flex; gap: 8px; padding: 12px 16px; }
     textarea {
       flex: 1; min-width: 0; resize: none; padding: 10px; border-radius: 8px;
       border: 1px solid var(--border); background: var(--panel); color: var(--text); font: inherit;
     }
-    button {
+    button, select {
       padding: 0 16px; border: 0; border-radius: 8px; font: inherit; cursor: pointer;
       background: var(--accent); color: #0f1115;
     }
-    button.secondary { background: var(--border); color: var(--text); }
+    button.secondary, select { background: var(--border); color: var(--text); }
     button:disabled { opacity: 0.5; cursor: wait; }
-    main { padding: 0 16px 16px; }
+    #attach { padding: 0 14px; font-size: 20px; }
+    #doc-bar {
+      display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+      padding: 0 16px 12px; font-size: 13px; color: var(--muted);
+    }
+    #doc-bar:empty { display: none; }
+    #doc-bar span { min-width: 0; overflow-wrap: anywhere; }
+    #doc-bar button { padding: 4px 10px; font-size: 13px; }
+    #doc-bar select { padding: 4px 8px; font-size: 13px; }
+    main { flex: 1; min-height: 0; padding: 0 16px 16px; }
     section {
-      display: flex; flex-direction: column; height: calc(100vh - 90px);
+      display: flex; flex-direction: column; height: 100%;
       background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
     }
-    h2 { margin: 0; padding: 12px; font-size: 15px; border-bottom: 1px solid var(--border); }
+    h2 { margin: 0; padding: 12px; font-size: 15px; border-bottom: 1px solid var(--border); overflow-wrap: anywhere; }
     .stats { padding: 8px 12px; font-size: 13px; color: var(--muted); border-bottom: 1px solid var(--border); }
     .log { flex: 1; overflow-y: auto; padding: 12px; }
-    .msg { margin: 0 0 10px; padding: 8px 10px; border-radius: 8px; line-height: 1.45; white-space: pre-wrap; }
+    .msg { margin: 0 0 10px; padding: 8px 10px; border-radius: 8px; line-height: 1.45; white-space: pre-wrap; overflow-wrap: anywhere; }
     .user { background: var(--user); }
+    .waiting { color: var(--muted); }
     .error { color: var(--error); }
+    details { margin: 0 0 14px; padding: 0 10px; font-size: 13px; color: var(--muted); }
+    summary { cursor: pointer; }
+    .source { margin-top: 8px; padding: 8px 10px; border-left: 2px solid var(--border); line-height: 1.45; overflow-wrap: anywhere; }
+    .source strong { display: block; margin-bottom: 4px; color: var(--text); font-weight: 600; }
+    @media (max-width: 600px) {
+      header { flex-wrap: wrap; }
+      textarea { order: -1; flex-basis: 100%; }
+      header button { flex: 1; padding: 10px 12px; }
+    }
   </style>
 </head>
 <body>
   <header>
-    <textarea id="input" rows="2" placeholder="Ask something, e.g. Explain how HTTPS works in 300 words"></textarea>
+    <button id="attach" class="secondary" title="Upload a PDF" aria-label="Upload a PDF">+</button>
+    <input id="file" type="file" accept="application/pdf,.pdf" hidden>
+    <textarea id="input" rows="2"></textarea>
     <button id="send">Send</button>
     <button id="reset" class="secondary">New chat</button>
   </header>
+  <div id="doc-bar"></div>
 
   <main>
     <section>
-      <h2>Streaming · POST /chat/stream</h2>
-      <div class="stats" id="stats">First text: – · Total: – · Tokens: –</div>
+      <h2 id="title"></h2>
+      <div class="stats" id="stats"></div>
       <div class="log" id="log"></div>
     </section>
   </main>
 
   <script>
-    const EMPTY_STATS = "First text: – · Total: – · Tokens: –";
+    const DOC_KEY = "attached-document";
     const input = document.getElementById("input");
     const sendButton = document.getElementById("send");
+    const attachButton = document.getElementById("attach");
+    const fileInput = document.getElementById("file");
+    const docBar = document.getElementById("doc-bar");
+    const title = document.getElementById("title");
     const log = document.getElementById("log");
     const stats = document.getElementById("stats");
 
     let conversationId = null;  // null = the next message starts a new conversation
+    let attached = loadAttached();  // {id, filename, page_count, chunks} or null
+    let method = "rag";  // "rag" or "prompt"; used only while a document is attached
+
+    // the attached document survives a page refresh, so you don't upload it again
+    function loadAttached() {
+      try { return JSON.parse(localStorage.getItem(DOC_KEY)); } catch { return null; }
+    }
+
+    function saveAttached() {
+      try {
+        if (attached) localStorage.setItem(DOC_KEY, JSON.stringify(attached));
+        else localStorage.removeItem(DOC_KEY);
+      } catch { /* the page still works without saving */ }
+    }
+
+    function emptyStats() {
+      return attached ? "Total: – · Input: – · Output: –" : "First text: – · Total: – · Tokens: –";
+    }
+
+    // draw everything that depends on whether a document is attached
+    function renderMode() {
+      docBar.replaceChildren();
+      if (attached) {
+        title.textContent = `${attached.filename} · POST /ask/${method}`;
+        input.placeholder = "Ask about this document. Each question is answered on its own.";
+
+        const label = document.createElement("span");
+        label.textContent = `${attached.filename} · ${attached.page_count} pages · ${attached.chunks} chunks`;
+
+        const picker = document.createElement("select");
+        picker.setAttribute("aria-label", "How to answer");
+        picker.add(new Option("RAG: closest chunks", "rag"));
+        picker.add(new Option("Prompt: whole document", "prompt"));
+        picker.value = method;
+        picker.addEventListener("change", () => {
+          method = picker.value;
+          title.textContent = `${attached.filename} · POST /ask/${method}`;
+        });
+
+        const remove = document.createElement("button");
+        remove.className = "secondary";
+        remove.textContent = "Remove";
+        remove.addEventListener("click", () => setAttached(null));
+
+        docBar.append(label, picker, remove);
+      } else {
+        title.textContent = "Chat · POST /chat/stream";
+        input.placeholder = "Ask something, or press + to upload a PDF";
+      }
+    }
+
+    function setAttached(doc) {
+      attached = doc;
+      saveAttached();
+      renderMode();
+      stats.textContent = emptyStats();
+    }
 
     function addMessage(text, cls) {
       const div = document.createElement("div");
@@ -76,14 +162,83 @@
 
     function showError(bubble, text) {
       bubble.textContent = text;
-      bubble.classList.add("error");
+      bubble.className = "msg error";
     }
 
     async function errorText(res) {
       try { return (await res.json()).detail; } catch { return `HTTP ${res.status}`; }
     }
 
-    // read the body piece by piece; each line is one JSON event
+    function setBusy(busy) {
+      sendButton.disabled = busy;
+      attachButton.disabled = busy;
+    }
+
+    // + button: POST /documents saves the PDF and builds its chunks
+    async function uploadDocument(file) {
+      setBusy(true);
+      const bubble = addMessage(`Uploading ${file.name} and building chunks…`, "waiting");
+      try {
+        const form = new FormData();
+        form.append("file", file);
+        const res = await fetch("/documents", { method: "POST", body: form });
+        if (!res.ok) return showError(bubble, await errorText(res));
+        const doc = await res.json();
+        bubble.className = "msg";
+        bubble.textContent = `Ready: ${doc.filename} (${doc.page_count} pages, ${doc.chunks} chunks).`;
+        setAttached(doc);
+      } catch (err) {
+        showError(bubble, "Network error: " + err.message);
+      } finally {
+        setBusy(false);
+      }
+    }
+
+    function addSources(sources) {
+      if (!sources.length) return;
+      const details = document.createElement("details");
+      const summary = document.createElement("summary");
+      const pages = [...new Set(sources.map((s) => s.page))].sort((a, b) => a - b);
+      summary.textContent = `Sources: ${sources.length} chunks from page${pages.length > 1 ? "s" : ""} ${pages.join(", ")}`;
+      details.appendChild(summary);
+      for (const source of sources) {
+        const block = document.createElement("div");
+        block.className = "source";
+        const heading = document.createElement("strong");
+        heading.textContent = `Page ${source.page} · similarity ${source.score}`;
+        block.append(heading, source.content);
+        details.appendChild(block);
+      }
+      log.appendChild(details);
+      log.scrollTop = log.scrollHeight;
+    }
+
+    // document attached: POST /ask/rag or /ask/prompt returns the whole answer at once
+    async function askDocument(question) {
+      addMessage(question, "user");
+      const bubble = addMessage(method === "rag" ? "Searching and answering…" : "Reading the whole document…", "waiting");
+      try {
+        const res = await fetch(`/ask/${method}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ document_id: attached.id, question }),
+        });
+        if (!res.ok) {
+          showError(bubble, await errorText(res));
+          if (res.status === 404) setAttached(null);  // it's no longer in the database
+          return;
+        }
+        const data = await res.json();
+        bubble.className = "msg assistant";
+        bubble.textContent = data.answer;
+        addSources(data.sources);
+        stats.textContent = `${data.method}: Total: ${data.latency_ms} ms · Input: ${data.input_tokens} tokens · Output: ${data.output_tokens} tokens`;
+      } catch (err) {
+        showError(bubble, "Network error: " + err.message);
+      }
+    }
+
+    // no document: read the body piece by piece; each line is one JSON event
     async function sendMessage(message) {
       addMessage(message, "user");
       const bubble = addMessage("", "assistant");
@@ -130,11 +285,12 @@
 
     async function send() {
       const message = input.value.trim();
-      if (!message) return;
+      if (!message || sendButton.disabled) return;
       input.value = "";
-      sendButton.disabled = true;
-      await sendMessage(message);
-      sendButton.disabled = false;
+      setBusy(true);
+      if (attached) await askDocument(message);
+      else await sendMessage(message);
+      setBusy(false);
       input.focus();
     }
 
@@ -146,11 +302,20 @@
       }
     });
 
+    attachButton.addEventListener("click", () => fileInput.click());
+    fileInput.addEventListener("change", () => {
+      if (fileInput.files.length) uploadDocument(fileInput.files[0]);
+      fileInput.value = "";  // so picking the same file again still fires "change"
+    });
+
     document.getElementById("reset").addEventListener("click", () => {
       conversationId = null;
       log.innerHTML = "";
-      stats.textContent = EMPTY_STATS;
+      stats.textContent = emptyStats();
     });
+
+    renderMode();
+    stats.textContent = emptyStats();
   </script>
 </body>
 </html>

@@ -1,10 +1,12 @@
 from datetime import datetime
 
+from pgvector.sqlalchemy import Vector
 from sqlalchemy import DateTime, ForeignKey, String, Text,func
 from sqlalchemy.orm import Mapped, mapped_column,relationship
 
 
 from db import Base
+EMBEDDING_DIM = 384   # how many numbers the embedding model produces per chunk
 
 
 
@@ -48,3 +50,19 @@ class Document(Base):
     page_count: Mapped[int]
     content: Mapped[str] = mapped_column(Text)   # the whole text, with [Page N] markers
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    chunks: Mapped[list["Chunk"]] = relationship(
+        back_populates="document",
+        cascade="all, delete-orphan",   # deleting a document deletes its chunks
+    )
+
+
+class Chunk(Base):
+    __tablename__= "chunks"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    document_id: Mapped[int] = mapped_column(ForeignKey("documents.id", ondelete="CASCADE"), index=True)
+    page: Mapped[int]
+    content: Mapped[str] = mapped_column(Text)
+    embedding: Mapped[list[float]] = mapped_column(Vector(EMBEDDING_DIM))
+
+    document: Mapped[Document] = relationship(back_populates="chunks")
