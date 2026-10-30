@@ -1,19 +1,21 @@
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict,Field
 
 
 MAX_MESSAGE_CHARS = 4000
 
 
-# MESSAGE
-
-
 # CHAT
 class ChatRequest(BaseModel):
-    message: str
+    model_config = ConfigDict(str_strip_whitespace=True)
+    message: str = Field(min_length=1, max_length=MAX_MESSAGE_CHARS)
+    conversation_id: int | None = None
+
+
+class ChatResponse(BaseModel):
     conversation_id: int
-
-
-class chatResponse(BaseModel):
+    reply:str
+    model:str
+    tokens_used: int
 
