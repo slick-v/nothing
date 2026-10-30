@@ -28,13 +28,7 @@ MAX_PDF_BYTES = 10 * 1024 * 1024   # 10 MB
 
 
 @asynccontextmanager
-async def lifespan(app:FastAPI):
-    # creates table that doesnt exist yet (never cahnges existing ones)
-    # Base.metadata.create_all(engine)
-    with engine.begin() as conn:
-        conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
-    # pgvector is in the image, but off by default
-    Base.metadata.create_all(engine)
+async def lifespan(app: FastAPI):
     get_model()   # load now, so the first question isn't slowed down
     yield
 
