@@ -83,6 +83,7 @@
 
   <script>
     const DOC_KEY = "attached-document";
+    const POLL_MS = 1500;
     const input = document.getElementById("input");
     const sendButton = document.getElementById("send");
     const attachButton = document.getElementById("attach");
@@ -120,7 +121,9 @@
         input.placeholder = "Ask about this document. Each question is answered on its own.";
 
         const label = document.createElement("span");
-        label.textContent = `${attached.filename} · ${attached.page_count} pages · ${attached.chunks} chunks`;
+        label.textContent = attached.status === "processing"
+          ? `${attached.filename} · ${attached.page_count} pages · building chunks…`
+          : `${attached.filename} · ${attached.page_count} pages · ${attached.chunks} chunks`;
 
         const picker = document.createElement("select");
         picker.setAttribute("aria-label", "How to answer");
@@ -174,19 +177,56 @@
       attachButton.disabled = busy;
     }
 
-    // + button: POST /documents saves the PDF and builds its chunks
+    const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+    // GET /documents/{id} until the background job has finished
+    async function waitUntilReady(id, bubble) {
+      while (attached && attached.id === id) {
+        await sleep(POLL_MS);
+        if (!attached || attached.id !== id) return;
+        try {
+          const res = await fetch(`/documents/${id}`);
+          if (res.status === 404) {
+            showError(bubble, "Document not found");
+            return setAttached(null);
+          }
+          if (!res.ok) continue;
+          const doc = await res.json();
+          if (doc.status === "ready") {
+            bubble.className = "msg";
+            bubble.textContent = `Ready: ${doc.filename} (${doc.page_count} pages, ${doc.chunks} chunks).`;
+            return setAttached(doc);
+          }
+          if (doc.status === "failed") {
+            showError(bubble, doc.error);
+            return setAttached(null);
+          }
+        } catch { /* a network blip: keep checking */ }
+      }
+    }
+
+    // after a page refresh, find out what happened to the attached document
+    async function checkAttached() {
+      if (!attached) return;
+      const bubble = addMessage(`Checking ${attached.filename}…`, "waiting");
+      await waitUntilReady(attached.id, bubble);
+      if (bubble.textContent.startsWith("Ready:")) bubble.remove();
+    }
+
+    // + button: POST /documents saves the PDF, and its chunks are built in the background
     async function uploadDocument(file) {
       setBusy(true);
-      const bubble = addMessage(`Uploading ${file.name} and building chunks…`, "waiting");
+      const bubble = addMessage(`Uploading ${file.name}…`, "waiting");
       try {
         const form = new FormData();
         form.append("file", file);
         const res = await fetch("/documents", { method: "POST", body: form });
         if (!res.ok) return showError(bubble, await errorText(res));
         const doc = await res.json();
-        bubble.className = "msg";
-        bubble.textContent = `Ready: ${doc.filename} (${doc.page_count} pages, ${doc.chunks} chunks).`;
+        bubble.textContent = `Building chunks for ${doc.filename}…`;
         setAttached(doc);
+        setBusy(false);
+        await waitUntilReady(doc.id, bubble);
       } catch (err) {
         showError(bubble, "Network error: " + err.message);
       } finally {
@@ -286,6 +326,10 @@
     async function send() {
       const message = input.value.trim();
       if (!message || sendButton.disabled) return;
+      if (attached && attached.status !== "ready") {
+        addMessage("Still building chunks. Your question stays in the box, so try again in a moment.", "waiting");
+        return;
+      }
       input.value = "";
       setBusy(true);
       if (attached) await askDocument(message);
@@ -316,6 +360,7 @@
 
     renderMode();
     stats.textContent = emptyStats();
+    checkAttached();
   </script>
 </body>
 </html>

@@ -1,11 +1,16 @@
+import logging
 import re
 from functools import lru_cache
+from threading import Lock
 
 from fastembed import TextEmbedding
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 import models
+from db import SessionLocal
+
+logger = logging.getLogger(__name__)
 
 
 
@@ -13,6 +18,7 @@ EMBEDDING_MODEL = "BAAI/bge-small-en-v1.5"   # must produce models.EMBEDDING_DIM
 CHUNK_WORDS = 80
 CHUNK_OVERLAP = 15   # repeated words, so a sentence cut at the edge survives in the next chunk
 TOP_K = 4
+INDEX_LOCK = Lock()   # embed one document at a time, so uploads can't use up the whole CPU
 
 
 @lru_cache
@@ -56,3 +62,33 @@ def search(db: Session, document_id: int, question: str, top_k: int = TOP_K) -> 
         .limit(top_k)
     ).all()
     return [(chunk, 1 - dist) for chunk, dist in rows]
+
+
+
+def index_document(document_id: int) -> None:
+    """Background job: build a document's chunks and record whether it worked."""
+    # short database sessions, so no connection is held during the slow embedding step
+    with SessionLocal() as db:
+        content = db.get(models.Document, document_id).content
+
+    try:
+        with INDEX_LOCK:
+            pieces = chunk_document(content)
+            vectors = embed_chunks([text for _, text in pieces])
+
+        with SessionLocal() as db:
+            document = db.get(models.Document, document_id)
+            document.chunks = [
+                models.Chunk(page=page, content=text, embedding=vector)
+                for (page, text), vector in zip(pieces, vectors)
+            ]
+            document.chunk_count = len(pieces)
+            document.status = "ready"
+            db.commit()   # the chunks and the status are saved together
+    except Exception:
+        logger.exception("Could not index document %s", document_id)
+        with SessionLocal() as db:
+            document = db.get(models.Document, document_id)
+            document.status = "failed"
+            document.error = "Could not build chunks for this document. Upload it again."
+            db.commit()

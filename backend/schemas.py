@@ -26,6 +26,8 @@ class DocumentOut(BaseModel):
     page_count: int
     characters: int
     chunks: int
+    status: str   # processing, ready or failed
+    error: str | None = None
 
 class AskRequest(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)

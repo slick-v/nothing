@@ -1,0 +1,965 @@
+{
+  "document": "ashgrove_manual.pdf",
+  "how_to_grade": "An answer is correct if, for every group in must_include, it contains at least one of the group's strings (ignoring case). An answer has the right citation if it cites at least one page listed in pages. For questions with answerable=false, the pages list is empty and there is nothing to cite. Retrieval is right if the retrieved chunks contain every string in evidence. Tune settings on split=dev only, and report split=test as the score.",
+  "questions": [
+    {
+      "id": "atm_q01",
+      "type": "fact",
+      "split": "dev",
+      "question": "Who is the safety director?",
+      "expected_answer": "Beatriz Monteiro.",
+      "must_include": [
+        [
+          "Monteiro"
+        ]
+      ],
+      "evidence": [
+        "Safety director: Beatriz Monteiro"
+      ],
+      "pages": [
+        100
+      ],
+      "answerable": true
+    },
+    {
+      "id": "atm_q02",
+      "type": "fact",
+      "split": "test",
+      "question": "How long does the Duty controller certificate course last?",
+      "expected_answer": "10 days.",
+      "must_include": [
+        [
+          "10 days",
+          "ten days"
+        ]
+      ],
+      "evidence": [
+        "Course TR-340 lasts 10 days."
+      ],
+      "pages": [
+        78
+      ],
+      "answerable": true
+    },
+    {
+      "id": "atm_q03",
+      "type": "fact",
+      "split": "dev",
+      "question": "How many fare zones does the network have?",
+      "expected_answer": "4.",
+      "must_include": [
+        [
+          "4",
+          "four"
+        ]
+      ],
+      "evidence": [
+        "The network is divided into 4 fare zones."
+      ],
+      "pages": [
+        80
+      ],
+      "answerable": true
+    },
+    {
+      "id": "atm_q04",
+      "type": "fact",
+      "split": "test",
+      "question": "What is the extension for the control room?",
+      "expected_answer": "4000.",
+      "must_include": [
+        [
+          "4000"
+        ]
+      ],
+      "evidence": [
+        "Control room: extension 4000"
+      ],
+      "pages": [
+        100
+      ],
+      "answerable": true
+    },
+    {
+      "id": "atm_q05",
+      "type": "fact",
+      "split": "dev",
+      "question": "How much does the employer contribute to the pension?",
+      "expected_answer": "9% of pensionable pay.",
+      "must_include": [
+        [
+          "9%",
+          "9 percent"
+        ]
+      ],
+      "evidence": [
+        "Ashgrove Regional Transit contributes 9% of pensionable pay."
+      ],
+      "pages": [
+        52
+      ],
+      "answerable": true
+    },
+    {
+      "id": "atm_q06",
+      "type": "fact",
+      "split": "dev",
+      "question": "How many weeks of parental leave at full pay are employees entitled to?",
+      "expected_answer": "16 weeks.",
+      "must_include": [
+        [
+          "16 weeks",
+          "sixteen weeks"
+        ]
+      ],
+      "evidence": [
+        "Parental leave is 16 weeks at full pay"
+      ],
+      "pages": [
+        51
+      ],
+      "answerable": true
+    },
+    {
+      "id": "atm_q07",
+      "type": "fact",
+      "split": "test",
+      "question": "How much is the meal allowance?",
+      "expected_answer": "$14.00.",
+      "must_include": [
+        [
+          "14.00",
+          "$14"
+        ]
+      ],
+      "evidence": [
+        "Meal allowance of $14.00"
+      ],
+      "pages": [
+        54
+      ],
+      "answerable": true
+    },
+    {
+      "id": "atm_q08",
+      "type": "fact",
+      "split": "dev",
+      "question": "What year did class AT-5E enter service?",
+      "expected_answer": "2022.",
+      "must_include": [
+        [
+          "2022"
+        ]
+      ],
+      "evidence": [
+        "Class AT-5E entered service in 2022."
+      ],
+      "pages": [
+        41
+      ],
+      "answerable": true
+    },
+    {
+      "id": "atm_q09",
+      "type": "similar_facts",
+      "split": "dev",
+      "question": "Who is the depot manager at Glenarrow?",
+      "expected_answer": "Santiago Rojas.",
+      "must_include": [
+        [
+          "Rojas"
+        ]
+      ],
+      "evidence": [
+        "The Glenarrow depot manager is Santiago Rojas."
+      ],
+      "pages": [
+        18
+      ],
+      "answerable": true
+    },
+    {
+      "id": "atm_q10",
+      "type": "similar_facts",
+      "split": "test",
+      "question": "Who is the safety officer at Bramwell?",
+      "expected_answer": "Lucas Ferreira.",
+      "must_include": [
+        [
+          "Ferreira"
+        ]
+      ],
+      "evidence": [
+        "The Bramwell safety officer is Lucas Ferreira."
+      ],
+      "pages": [
+        20
+      ],
+      "answerable": true
+    },
+    {
+      "id": "atm_q11",
+      "type": "similar_facts",
+      "split": "dev",
+      "question": "How many charging points does Tolland have?",
+      "expected_answer": "44.",
+      "must_include": [
+        [
+          "44"
+        ]
+      ],
+      "evidence": [
+        "Tolland has 44 charging points."
+      ],
+      "pages": [
+        6
+      ],
+      "answerable": true
+    },
+    {
+      "id": "atm_q12",
+      "type": "similar_facts",
+      "split": "test",
+      "question": "What is the yard speed limit at Sutter Cross?",
+      "expected_answer": "6 km/h.",
+      "must_include": [
+        [
+          "6 km/h",
+          "6 kilometres",
+          "6 kph"
+        ]
+      ],
+      "evidence": [
+        "The speed limit inside the Sutter Cross yard is 6 km/h."
+      ],
+      "pages": [
+        22
+      ],
+      "answerable": true
+    },
+    {
+      "id": "atm_q13",
+      "type": "similar_facts",
+      "split": "dev",
+      "question": "How many parking bays does the Wexcombe depot have?",
+      "expected_answer": "37.",
+      "must_include": [
+        [
+          "37"
+        ]
+      ],
+      "evidence": [
+        "Wexcombe has 37 parking bays."
+      ],
+      "pages": [
+        12
+      ],
+      "answerable": true
+    },
+    {
+      "id": "atm_q14",
+      "type": "similar_facts",
+      "split": "dev",
+      "question": "How often does Route 33 run at peak times?",
+      "expected_answer": "Every 6 minutes.",
+      "must_include": [
+        [
+          "6 minutes",
+          "six minutes"
+        ]
+      ],
+      "evidence": [
+        "Route 33 runs every 6 minutes at peak times"
+      ],
+      "pages": [
+        34
+      ],
+      "answerable": true
+    },
+    {
+      "id": "atm_q15",
+      "type": "similar_facts",
+      "split": "test",
+      "question": "What time is the last departure on Route 41?",
+      "expected_answer": "22:10.",
+      "must_include": [
+        [
+          "22:10"
+        ]
+      ],
+      "evidence": [
+        "The first departure on Route 41 is at 06:15 and the last departure is at 22:10."
+      ],
+      "pages": [
+        36
+      ],
+      "answerable": true
+    },
+    {
+      "id": "atm_q16",
+      "type": "similar_facts",
+      "split": "dev",
+      "question": "How often is class AT-6D inspected?",
+      "expected_answer": "Every 14,000 km.",
+      "must_include": [
+        [
+          "14000",
+          "14,000"
+        ]
+      ],
+      "evidence": [
+        "Class AT-6D receives a scheduled inspection every 14000 km."
+      ],
+      "pages": [
+        42
+      ],
+      "answerable": true
+    },
+    {
+      "id": "atm_q17",
+      "type": "similar_facts",
+      "split": "test",
+      "question": "What is the brake overhaul interval for class AT-8X?",
+      "expected_answer": "Every 160,000 km.",
+      "must_include": [
+        [
+          "160000",
+          "160,000"
+        ]
+      ],
+      "evidence": [
+        "Brake overhaul on class AT-8X takes place every 160000 km."
+      ],
+      "pages": [
+        44
+      ],
+      "answerable": true
+    },
+    {
+      "id": "atm_q18",
+      "type": "table",
+      "split": "dev",
+      "question": "What is the hourly rate for grade G6?",
+      "expected_answer": "$29.80.",
+      "must_include": [
+        [
+          "29.80"
+        ]
+      ],
+      "evidence": [
+        "Grade G6 hourly rate: $29.80."
+      ],
+      "pages": [
+        46
+      ],
+      "answerable": true
+    },
+    {
+      "id": "atm_q19",
+      "type": "table",
+      "split": "test",
+      "question": "How much is a single adult fare across three zones?",
+      "expected_answer": "$3.85.",
+      "must_include": [
+        [
+          "3.85"
+        ]
+      ],
+      "evidence": [
+        "A single adult fare across three zones costs $3.85."
+      ],
+      "pages": [
+        80
+      ],
+      "answerable": true
+    },
+    {
+      "id": "atm_q20",
+      "type": "table",
+      "split": "dev",
+      "question": "How much does a monthly pass cost?",
+      "expected_answer": "$112.00.",
+      "must_include": [
+        [
+          "112"
+        ]
+      ],
+      "evidence": [
+        "A monthly pass valid in all zones costs $112.00."
+      ],
+      "pages": [
+        81
+      ],
+      "answerable": true
+    },
+    {
+      "id": "atm_q21",
+      "type": "table",
+      "split": "test",
+      "question": "How many days of annual leave does someone with 8 years of service get?",
+      "expected_answer": "28 days.",
+      "must_include": [
+        [
+          "28"
+        ]
+      ],
+      "evidence": [
+        "Employees with 5 to 14 years of service receive 28 days of annual leave."
+      ],
+      "pages": [
+        49
+      ],
+      "answerable": true
+    },
+    {
+      "id": "atm_q22",
+      "type": "table",
+      "split": "dev",
+      "question": "What is the alcohol limit for safety-critical staff?",
+      "expected_answer": "0.2 grams per litre of blood.",
+      "must_include": [
+        [
+          "0.2"
+        ]
+      ],
+      "evidence": [
+        "The alcohol limit for all safety-critical staff is 0.2 grams per litre of blood."
+      ],
+      "pages": [
+        90
+      ],
+      "answerable": true
+    },
+    {
+      "id": "atm_q23",
+      "type": "exact_code",
+      "split": "dev",
+      "question": "What wind speed stops double-deck vehicles crossing exposed bridges under SR-417?",
+      "expected_answer": "Gusts over 85 km/h.",
+      "must_include": [
+        [
+          "85"
+        ]
+      ],
+      "evidence": [
+        "Double-deck vehicles must stop crossing exposed bridges when gusts exceed 85 km/h."
+      ],
+      "pages": [
+        60
+      ],
+      "answerable": true
+    },
+    {
+      "id": "atm_q24",
+      "type": "exact_code",
+      "split": "test",
+      "question": "What does SR-444 say about fuel containers?",
+      "expected_answer": "Refuse carriage of any fuel container larger than 5 litres.",
+      "must_include": [
+        [
+          "5 litres",
+          "5 liters",
+          "five litres"
+        ]
+      ],
+      "evidence": [
+        "Refuse carriage of any fuel container larger than 5 litres."
+      ],
+      "pages": [
+        67
+      ],
+      "answerable": true
+    },
+    {
+      "id": "atm_q25",
+      "type": "exact_code",
+      "split": "dev",
+      "question": "What is the renewal period for TR-305?",
+      "expected_answer": "Every 18 months.",
+      "must_include": [
+        [
+          "18 months"
+        ]
+      ],
+      "evidence": [
+        "Course TR-305 must be renewed every 18 months."
+      ],
+      "pages": [
+        77
+      ],
+      "answerable": true
+    },
+    {
+      "id": "atm_q26",
+      "type": "exact_code",
+      "split": "test",
+      "question": "Which form must a driver complete after a collision?",
+      "expected_answer": "Form IR-7.",
+      "must_include": [
+        [
+          "IR-7"
+        ]
+      ],
+      "evidence": [
+        "The driver must complete form IR-7 before the end of the shift."
+      ],
+      "pages": [
+        65
+      ],
+      "answerable": true
+    },
+    {
+      "id": "atm_q27",
+      "type": "exact_code",
+      "split": "dev",
+      "question": "Who is required to take course TR-410?",
+      "expected_answer": "Drivers rostered on Route 27.",
+      "must_include": [
+        [
+          "Route 27"
+        ]
+      ],
+      "evidence": [
+        "Course TR-410 is required for: Drivers rostered on Route 27."
+      ],
+      "pages": [
+        79
+      ],
+      "answerable": true
+    },
+    {
+      "id": "atm_q28",
+      "type": "paraphrase",
+      "split": "dev",
+      "question": "If I'm ill, how soon before work do I have to tell someone?",
+      "expected_answer": "At least 90 minutes before the shift.",
+      "must_include": [
+        [
+          "90 minutes"
+        ]
+      ],
+      "evidence": [
+        "no later than 90 minutes before the start of a rostered shift"
+      ],
+      "pages": [
+        50
+      ],
+      "answerable": true
+    },
+    {
+      "id": "atm_q29",
+      "type": "paraphrase",
+      "split": "test",
+      "question": "How long do you keep things that passengers forget on buses?",
+      "expected_answer": "28 days.",
+      "must_include": [
+        [
+          "28 days"
+        ]
+      ],
+      "evidence": [
+        "Items left on vehicles are kept at the Central Station lost property office for 28 days."
+      ],
+      "pages": [
+        84
+      ],
+      "answerable": true
+    },
+    {
+      "id": "atm_q30",
+      "type": "paraphrase",
+      "split": "dev",
+      "question": "How long can someone drive before they have to stop for a rest?",
+      "expected_answer": "4 hours and 30 minutes.",
+      "must_include": [
+        [
+          "4 hours and 30",
+          "4.5 hours",
+          "4 hours 30",
+          "four and a half"
+        ]
+      ],
+      "evidence": [
+        "Drivers may not drive for more than 4 hours and 30 minutes without a break of at least 30 minutes."
+      ],
+      "pages": [
+        92
+      ],
+      "answerable": true
+    },
+    {
+      "id": "atm_q31",
+      "type": "paraphrase",
+      "split": "test",
+      "question": "What should I do if the battery on an electric bus starts smoking?",
+      "expected_answer": "Move at least 75 metres away.",
+      "must_include": [
+        [
+          "75 metres",
+          "75 meters",
+          "75 m"
+        ]
+      ],
+      "evidence": [
+        "Move at least 75 metres away from any electric vehicle showing battery smoke."
+      ],
+      "pages": [
+        62
+      ],
+      "answerable": true
+    },
+    {
+      "id": "atm_q32",
+      "type": "rule",
+      "split": "dev",
+      "question": "Can a driver use a handheld phone while stopped at a bus stop?",
+      "expected_answer": "No, not even when stationary.",
+      "must_include": [
+        [
+          "not",
+          "no,",
+          "cannot",
+          "can't",
+          "may not"
+        ]
+      ],
+      "evidence": [
+        "Drivers must not use a handheld phone while in the cab, even when the vehicle is stationary at a stop."
+      ],
+      "pages": [
+        91
+      ],
+      "answerable": true
+    },
+    {
+      "id": "atm_q33",
+      "type": "rule",
+      "split": "test",
+      "question": "Is a doctor's certificate needed for a 5-day sickness absence?",
+      "expected_answer": "No, only for absences longer than 7 calendar days.",
+      "must_include": [
+        [
+          "7 calendar days",
+          "7 days",
+          "seven"
+        ]
+      ],
+      "evidence": [
+        "certificate is required for any absence longer than 7 calendar days."
+      ],
+      "pages": [
+        50
+      ],
+      "answerable": true
+    },
+    {
+      "id": "atm_q34",
+      "type": "rule",
+      "split": "dev",
+      "question": "Can an inspector ask for cash on the vehicle for a penalty fare?",
+      "expected_answer": "No, they must issue a written notice.",
+      "must_include": [
+        [
+          "written notice"
+        ]
+      ],
+      "evidence": [
+        "Inspectors must issue a written notice and must not ask for cash on the vehicle."
+      ],
+      "pages": [
+        83
+      ],
+      "answerable": true
+    },
+    {
+      "id": "atm_q35",
+      "type": "rule",
+      "split": "test",
+      "question": "Is a 70-year-old passenger charged at 08:00 on a weekday?",
+      "expected_answer": "Yes. Free travel starts after 09:30 on weekdays.",
+      "must_include": [
+        [
+          "09:30",
+          "9:30"
+        ]
+      ],
+      "evidence": [
+        "Passengers aged 65 or over travel free after 09:30 on weekdays and all day at weekends."
+      ],
+      "pages": [
+        82
+      ],
+      "answerable": true
+    },
+    {
+      "id": "atm_q36",
+      "type": "calculation",
+      "split": "dev",
+      "question": "A grade G4 employee works 4 hours of overtime in a week. How much overtime pay do they get?",
+      "expected_answer": "$147.60 (4 x 24.60 x 1.5).",
+      "must_include": [
+        [
+          "147.60",
+          "147.6"
+        ]
+      ],
+      "evidence": [
+        "Grade G4 hourly rate: $24.60.",
+        "The first 4 hours of overtime in a week are paid at 1.5 times the hourly rate."
+      ],
+      "pages": [
+        46,
+        47
+      ],
+      "answerable": true
+    },
+    {
+      "id": "atm_q37",
+      "type": "calculation",
+      "split": "test",
+      "question": "Two adults and one 10-year-old take a single trip across two zones. What is the total fare?",
+      "expected_answer": "$7.75 (3.10 + 3.10 + 1.55).",
+      "must_include": [
+        [
+          "7.75"
+        ]
+      ],
+      "evidence": [
+        "A single adult fare across two zones costs $3.10.",
+        "Passengers aged 5 to 15 pay 50% of the adult fare."
+      ],
+      "pages": [
+        80,
+        82
+      ],
+      "answerable": true
+    },
+    {
+      "id": "atm_q38",
+      "type": "calculation",
+      "split": "dev",
+      "question": "How many passengers in total, seated and standing, can class AT-7C carry?",
+      "expected_answer": "125 (51 + 74).",
+      "must_include": [
+        [
+          "125"
+        ]
+      ],
+      "evidence": [
+        "Class AT-7C seats 51 passengers and carries up to 74 standing passengers."
+      ],
+      "pages": [
+        43
+      ],
+      "answerable": true
+    },
+    {
+      "id": "atm_q39",
+      "type": "multi_page",
+      "split": "dev",
+      "question": "Who manages the depot that operates Route 14?",
+      "expected_answer": "Oluwaseun Adeyemi (Route 14 runs from Marlstone).",
+      "must_include": [
+        [
+          "Adeyemi"
+        ]
+      ],
+      "evidence": [
+        "Route 14 runs between Foundry Way and Eastgate Mall and is operated from Marlstone Depot.",
+        "The Marlstone depot manager is Oluwaseun Adeyemi."
+      ],
+      "pages": [
+        14,
+        30
+      ],
+      "answerable": true
+    },
+    {
+      "id": "atm_q40",
+      "type": "multi_page",
+      "split": "test",
+      "question": "How often is the vehicle class used on Route 22 inspected?",
+      "expected_answer": "Every 22,000 km (Route 22 uses AT-7C).",
+      "must_include": [
+        [
+          "22000",
+          "22,000"
+        ]
+      ],
+      "evidence": [
+        "Route 22 is normally worked by class AT-7C vehicles.",
+        "Class AT-7C receives a scheduled inspection every 22000 km."
+      ],
+      "pages": [
+        32,
+        43
+      ],
+      "answerable": true
+    },
+    {
+      "id": "atm_q41",
+      "type": "multi_page",
+      "split": "dev",
+      "question": "What battery capacity does the vehicle class on Route 27 have?",
+      "expected_answer": "560 kWh (Route 27 uses AT-8X).",
+      "must_include": [
+        [
+          "560"
+        ]
+      ],
+      "evidence": [
+        "Route 27 is normally worked by class AT-8X vehicles.",
+        "The energy system of class AT-8X is electric, 560 kWh battery."
+      ],
+      "pages": [
+        33,
+        44
+      ],
+      "answerable": true
+    },
+    {
+      "id": "atm_q42",
+      "type": "superseded",
+      "split": "dev",
+      "question": "What is the current night premium per hour?",
+      "expected_answer": "$3.10 (Amendment 2 replaced the earlier rate).",
+      "must_include": [
+        [
+          "3.10"
+        ]
+      ],
+      "evidence": [
+        "The night premium is now $3.10 per hour instead of the earlier rate."
+      ],
+      "pages": [
+        95
+      ],
+      "answerable": true
+    },
+    {
+      "id": "atm_q43",
+      "type": "superseded",
+      "split": "test",
+      "question": "What is the penalty fare for no valid ticket, under the latest rules?",
+      "expected_answer": "$75, or $40 if paid within 14 days (Amendment 3).",
+      "must_include": [
+        [
+          "$75",
+          "75"
+        ]
+      ],
+      "evidence": [
+        "The penalty fare for travelling without a valid ticket is now $75"
+      ],
+      "pages": [
+        96
+      ],
+      "answerable": true
+    },
+    {
+      "id": "atm_q44",
+      "type": "not_in_document",
+      "split": "dev",
+      "question": "Who manages the Dunmere depot?",
+      "expected_answer": "Not in the document.",
+      "must_include": [
+        [
+          "Not in the document"
+        ]
+      ],
+      "evidence": [],
+      "pages": [],
+      "answerable": false
+    },
+    {
+      "id": "atm_q45",
+      "type": "not_in_document",
+      "split": "test",
+      "question": "What is the hourly rate for grade G9?",
+      "expected_answer": "Not in the document.",
+      "must_include": [
+        [
+          "Not in the document"
+        ]
+      ],
+      "evidence": [],
+      "pages": [],
+      "answerable": false
+    },
+    {
+      "id": "atm_q46",
+      "type": "not_in_document",
+      "split": "dev",
+      "question": "What is the battery capacity of class AT-9Z?",
+      "expected_answer": "Not in the document.",
+      "must_include": [
+        [
+          "Not in the document"
+        ]
+      ],
+      "evidence": [],
+      "pages": [],
+      "answerable": false
+    },
+    {
+      "id": "atm_q47",
+      "type": "not_in_document",
+      "split": "test",
+      "question": "How often does Route 99 run at peak times?",
+      "expected_answer": "Not in the document.",
+      "must_include": [
+        [
+          "Not in the document"
+        ]
+      ],
+      "evidence": [],
+      "pages": [],
+      "answerable": false
+    },
+    {
+      "id": "atm_q48",
+      "type": "not_in_document",
+      "split": "dev",
+      "question": "What is the dental insurance allowance?",
+      "expected_answer": "Not in the document.",
+      "must_include": [
+        [
+          "Not in the document"
+        ]
+      ],
+      "evidence": [],
+      "pages": [],
+      "answerable": false
+    },
+    {
+      "id": "atm_q49",
+      "type": "not_in_document",
+      "split": "dev",
+      "question": "What is the fine for smoking on a bus?",
+      "expected_answer": "Not in the document.",
+      "must_include": [
+        [
+          "Not in the document"
+        ]
+      ],
+      "evidence": [],
+      "pages": [],
+      "answerable": false
+    },
+    {
+      "id": "atm_q50",
+      "type": "not_in_document",
+      "split": "test",
+      "question": "Who is the chief executive of Ashgrove Regional Transit?",
+      "expected_answer": "Not in the document.",
+      "must_include": [
+        [
+          "Not in the document"
+        ]
+      ],
+      "evidence": [],
+      "pages": [],
+      "answerable": false
+    }
+  ]
+}

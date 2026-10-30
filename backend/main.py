@@ -6,9 +6,9 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 import groq
 
-from fastapi import Depends,FastAPI, File,HTTPException,UploadFile
+from fastapi import BackgroundTasks,Depends,FastAPI, File,HTTPException,UploadFile
 from fastapi.responses import FileResponse, JSONResponse,StreamingResponse
-from sqlalchemy import select,text
+from sqlalchemy import select,text,update
 from sqlalchemy.orm import Session
 
 import models #noqa registers the tables on base before create_all
@@ -16,7 +16,8 @@ from config import settings
 from db import Base, SessionLocal,engine, get_db
 from llm import answer_from_context,get_reply, stream_reply
 from pdf import PdfError, extract_text
-from rag import chunk_document, embed_chunks, get_model, search
+# from rag import chunk_document, embed_chunks, get_model, search
+from rag import get_model, index_document, search
 from schemas import AskRequest,AskResponse,ChatResponse,ChatRequest,DocumentOut,SearchRequest,Source
 
 
@@ -29,6 +30,14 @@ MAX_PDF_BYTES = 10 * 1024 * 1024   # 10 MB
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # a job that was running when the server stopped will never finish, so say so
+    with SessionLocal() as db:
+        db.execute(
+            update(models.Document)
+            .where(models.Document.status == "processing")
+            .values(status="failed", error="The server restarted during processing. Upload it again.")
+        )
+        db.commit()
     get_model()   # load now, so the first question isn't slowed down
     yield
 
@@ -203,9 +212,21 @@ def chat_stream(request: ChatRequest, db: Session = Depends(get_db)):
 
     return StreamingResponse(generate(), media_type="application/x-ndjson")
 
+def to_document_out(document: models.Document) -> DocumentOut:
+    return DocumentOut(
+        id=document.id,
+        filename=document.filename,
+        page_count=document.page_count,
+        characters=len(document.content),
+        chunks=document.chunk_count,
+        status=document.status,
+        error=document.error,
+    )
 
-@app.post("/documents", response_model=DocumentOut, status_code=201)
-def upload_document(file: UploadFile = File(...), db:Session = Depends(get_db)):
+
+@app.post("/documents", response_model=DocumentOut, status_code=202)
+def upload_document(background_tasks: BackgroundTasks, file: UploadFile = File(...), db: Session = Depends(get_db)):
+    """Save the PDF and answer right away. Chunks are built in the background."""
     data = file.file.read(MAX_PDF_BYTES + 1)
     if len(data) > MAX_PDF_BYTES:
         raise HTTPException(status_code=413, detail="PDF is too big. The limit is 10 MB.")
@@ -215,25 +236,17 @@ def upload_document(file: UploadFile = File(...), db:Session = Depends(get_db)):
     except PdfError as e:
         raise HTTPException(status_code=422, detail=str(e))
 
-
-    pieces = chunk_document(content)
-    vectors = embed_chunks([text for _, text in pieces])
-
-
-    document = models.Document(filename=file.filename or "unnamed.pdf", 
-                               page_count=page_count, content=content)
-    document.chunks = [
-        models.Chunk(page=page, content=text, embedding=vector) for (page,text), vector in zip(pieces, vectors)
-    ]
-    db.add(document)
-    db.commit()      # the document and its chunks are saved together
-    return DocumentOut(
-        id=document.id,
-        filename=document.filename,
-        page_count=document.page_count,
-        characters=len(document.content),
-        chunks=len(document.chunks),
+    document = models.Document(
+        filename=file.filename or "unnamed.pdf",
+        page_count=page_count,
+        content=content,
+        status="processing",
     )
+    db.add(document)
+    db.commit()
+
+    background_tasks.add_task(index_document, document.id)
+    return to_document_out(document)
 
 
 def get_document(db: Session, document_id: int) -> models.Document:
@@ -241,6 +254,20 @@ def get_document(db: Session, document_id: int) -> models.Document:
     if document is None:
         raise HTTPException(status_code=404, detail="Document not found")
     return document
+
+
+@app.get("/documents/{document_id}", response_model=DocumentOut)
+def read_document(document_id: int, db: Session = Depends(get_db)):
+    """The page calls this every few seconds to see if the chunks are ready."""
+    return to_document_out(get_document(db, document_id))
+
+
+def require_ready(document: models.Document) -> None:
+    if document.status == "processing":
+        raise HTTPException(status_code=409, detail="This document is still being processed. Try again in a moment.")
+    if document.status == "failed":
+        raise HTTPException(status_code=409, detail=document.error)
+
 
 
 def call_llm(context: str, question: str, document_id: int) -> tuple[str, int, int]:
@@ -260,8 +287,9 @@ def call_llm(context: str, question: str, document_id: int) -> tuple[str, int, i
         logger.exception("LLM call failed for document %s", document_id)
         raise HTTPException(status_code=502, detail=LLM_ERROR)
 
-    
 
+
+    
 @app.post("/ask/prompt", response_model=AskResponse)
 def ask_prompt(request: AskRequest, db: Session = Depends(get_db)):
     """Baseline, no RAG: the whole document goes into the prompt on every question."""
@@ -287,6 +315,7 @@ def to_sources(hits: list[tuple[models.Chunk, float]]) -> list[Source]:
 def search_document(request: SearchRequest, db: Session = Depends(get_db)):
     """Retrieval only, no LLM: check that the right chunks come back."""
     document = get_document(db, request.document_id)
+    require_ready(document)
     return to_sources(search(db, document.id, request.question, request.top_k))
 
 
@@ -294,13 +323,19 @@ def search_document(request: SearchRequest, db: Session = Depends(get_db)):
 @app.post("/ask/rag", response_model=AskResponse)
 def ask_rag(request: AskRequest, db: Session = Depends(get_db)):
     """RAG: only the chunks closest to the question go into the prompt."""
+    # document = get_document(db, request.document_id)
+
+    # start = time.perf_counter()
+    # hits = search(db, document.id, request.question)
+    # if not hits:
+    #     raise HTTPException(status_code=409, detail="This document has no chunks. Upload it again.")
+
     document = get_document(db, request.document_id)
+    require_ready(document)
 
     start = time.perf_counter()
     hits = search(db, document.id, request.question)
-    if not hits:
-        raise HTTPException(status_code=409, detail="This document has no chunks. Upload it again.")
-
+    
     context = "\n\n".join(f"[Page {chunk.page}]\n{chunk.content}" for chunk, _ in hits)
     answer, input_tokens, output_tokens = call_llm(context, request.question, document.id)
 
