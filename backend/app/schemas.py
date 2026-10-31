@@ -1,5 +1,3 @@
-from typing import Literal
-
 from pydantic import BaseModel, ConfigDict,Field
 
 
@@ -40,12 +38,13 @@ class SearchRequest(AskRequest):
 
 class Source(BaseModel):
     page: int
+    section: str | None = None
     score: float   # 1 = same meaning, near 0 = unrelated
     content: str
 
 class AskResponse(BaseModel):
     answer: str
-    method: str   # "prompt" now, "rag" later
+    method: str   # "prompt" or "rag"
     model: str
     input_tokens: int
     output_tokens: int

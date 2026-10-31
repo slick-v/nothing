@@ -95,6 +95,7 @@
 
     let conversationId = null;  // null = the next message starts a new conversation
     let attached = loadAttached();  // {id, filename, page_count, chunks} or null
+    let documents = [];  // the saved documents, for the dropdown
     let method = "rag";  // "rag" or "prompt"; used only while a document is attached
 
     // the attached document survives a page refresh, so you don't upload it again
@@ -113,9 +114,43 @@
       return attached ? "Total: – · Input: – · Output: –" : "First text: – · Total: – · Tokens: –";
     }
 
+    // GET /documents fills the dropdown of saved documents
+    async function loadDocuments() {
+      try {
+        const res = await fetch("/documents?limit=200");
+        if (res.ok) documents = await res.json();
+      } catch { /* the dropdown just stays as it was */ }
+      renderMode();
+    }
+
+    function documentPicker() {
+      const picker = document.createElement("select");
+      picker.setAttribute("aria-label", "Saved documents");
+      picker.add(new Option("Plain chat, no document", ""));
+      for (const doc of documents) {
+        if (doc.status === "ready") picker.add(new Option(`${doc.filename} (#${doc.id})`, doc.id));
+      }
+      picker.value = attached && attached.status === "ready" ? attached.id : "";
+      picker.addEventListener("change", () => {
+        setAttached(documents.find((doc) => String(doc.id) === picker.value) || null);
+      });
+      return picker;
+    }
+
+    // DELETE /documents/{id} removes the document and its chunks
+    async function deleteAttached() {
+      if (!confirm(`Delete ${attached.filename} and its chunks?`)) return;
+      const res = await fetch(`/documents/${attached.id}`, { method: "DELETE" });
+      if (!res.ok && res.status !== 404) return addMessage(await errorText(res), "error");
+      addMessage(`Deleted ${attached.filename}.`, "msg");
+      setAttached(null);
+      await loadDocuments();
+    }
+
     // draw everything that depends on whether a document is attached
     function renderMode() {
       docBar.replaceChildren();
+      if (documents.length) docBar.append(documentPicker());
       if (attached) {
         title.textContent = `${attached.filename} · POST /ask/${method}`;
         input.placeholder = "Ask about this document. Each question is answered on its own.";
@@ -137,8 +172,8 @@
 
         const remove = document.createElement("button");
         remove.className = "secondary";
-        remove.textContent = "Remove";
-        remove.addEventListener("click", () => setAttached(null));
+        remove.textContent = "Delete";
+        remove.addEventListener("click", deleteAttached);
 
         docBar.append(label, picker, remove);
       } else {
@@ -195,7 +230,8 @@
           if (doc.status === "ready") {
             bubble.className = "msg";
             bubble.textContent = `Ready: ${doc.filename} (${doc.page_count} pages, ${doc.chunks} chunks).`;
-            return setAttached(doc);
+            setAttached(doc);
+            return loadDocuments();
           }
           if (doc.status === "failed") {
             showError(bubble, doc.error);
@@ -223,6 +259,12 @@
         const res = await fetch("/documents", { method: "POST", body: form });
         if (!res.ok) return showError(bubble, await errorText(res));
         const doc = await res.json();
+        if (res.status === 200 && doc.status === "ready") {  // 200 = this file was already uploaded
+          bubble.className = "msg";
+          bubble.textContent = `Already uploaded: ${doc.filename} (${doc.chunks} chunks). Using the saved copy.`;
+          setAttached(doc);
+          return;
+        }
         bubble.textContent = `Building chunks for ${doc.filename}…`;
         setAttached(doc);
         setBusy(false);
@@ -245,7 +287,7 @@
         const block = document.createElement("div");
         block.className = "source";
         const heading = document.createElement("strong");
-        heading.textContent = `Page ${source.page} · similarity ${source.score}`;
+        heading.textContent = `Page ${source.page}${source.section ? ` · ${source.section}` : ""} · similarity ${source.score}`;
         block.append(heading, source.content);
         details.appendChild(block);
       }
@@ -361,6 +403,7 @@
     renderMode();
     stats.textContent = emptyStats();
     checkAttached();
+    loadDocuments();
   </script>
 </body>
 </html>

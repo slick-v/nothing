@@ -1,6 +1,5 @@
 fastapi
 uvicorn[standard]
-# anthropic
 groq
 pydantic-settings
 python-dotenv

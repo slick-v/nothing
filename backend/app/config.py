@@ -4,8 +4,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 
-# .env is in the project root, one folder above backend/
-ENV_FILE = Path(__file__).resolve().parents[1] / ".env"
+# .env is in the project root, two folders above this file
+ENV_FILE = Path(__file__).resolve().parents[2] / ".env"
 
 
 class Settings(BaseSettings):

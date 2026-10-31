@@ -5,7 +5,7 @@ from sqlalchemy import DateTime, ForeignKey, String, Text,func
 from sqlalchemy.orm import Mapped, mapped_column,relationship
 
 
-from db import Base
+from app.db import Base
 EMBEDDING_DIM = 384   # how many numbers the embedding model produces per chunk
 
 
@@ -49,6 +49,7 @@ class Document(Base):
     filename: Mapped[str] = mapped_column(String(255))
     page_count: Mapped[int]
     content: Mapped[str] = mapped_column(Text)   # the whole text, with [Page N] markers
+    content_hash: Mapped[str | None] = mapped_column(String(64), unique=True, index=True)   # spots duplicate uploads
     status: Mapped[str] = mapped_column(String(20), server_default="ready")   # processing, ready or failed
     error: Mapped[str | None] = mapped_column(String(500))   # why it failed, safe to show the user
     chunk_count: Mapped[int] = mapped_column(server_default="0")
@@ -65,6 +66,7 @@ class Chunk(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     document_id: Mapped[int] = mapped_column(ForeignKey("documents.id", ondelete="CASCADE"), index=True)
     page: Mapped[int]
+    section: Mapped[str | None] = mapped_column(String(200))   # the heading this chunk sits under
     content: Mapped[str] = mapped_column(Text)
     embedding: Mapped[list[float]] = mapped_column(Vector(EMBEDDING_DIM))
 

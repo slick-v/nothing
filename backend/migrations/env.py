@@ -2,9 +2,9 @@ from logging.config import fileConfig
 
 from alembic import context
 
-import models  # noqa: F401  (registers the tables on Base, so Alembic can compare them)
-from config import settings
-from db import Base, engine
+from app import models  # noqa: F401  (registers the tables on Base, so Alembic can compare them)
+from app.config import settings
+from app.db import Base, engine
 
 if context.config.config_file_name is not None:
     fileConfig(context.config.config_file_name)

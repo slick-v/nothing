@@ -2,13 +2,14 @@ import logging
 import re
 from functools import lru_cache
 from threading import Lock
+from typing import NamedTuple
 
 from fastembed import TextEmbedding
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-import models
-from db import SessionLocal
+from app import models
+from app.db import SessionLocal
 
 logger = logging.getLogger(__name__)
 
@@ -18,8 +19,15 @@ EMBEDDING_MODEL = "BAAI/bge-small-en-v1.5"   # must produce models.EMBEDDING_DIM
 CHUNK_WORDS = 80
 CHUNK_OVERLAP = 15   # repeated words, so a sentence cut at the edge survives in the next chunk
 TOP_K = 4
+MAX_HEADING_CHARS = 80
+HEADING = re.compile(r"^\d+(\.\d+)*\.?\s+[A-Z].*[^.,;:?!]$")   # like "1.2 Tolland Depot" or "7. Late submissions"
 INDEX_LOCK = Lock()   # embed one document at a time, so uploads can't use up the whole CPU
 
+
+class Piece(NamedTuple):
+    page: int
+    section: str | None
+    text: str
 
 @lru_cache
 def get_model() -> TextEmbedding:
@@ -28,20 +36,39 @@ def get_model() -> TextEmbedding:
 
 
 
-def chunk_document(content:str) -> list[tuple[int,str]]:
-    """Split text with [Page N] markers into (page number, chunk text) pairs."""
+def is_heading(line: str) -> bool:
+    return len(line) <= MAX_HEADING_CHARS and HEADING.match(line) is not None
 
 
+def split_words(page: int, section: str | None, lines: list[str]) -> list[Piece]:
+    words = " ".join(lines).split()
+    pieces = []
+    for start in range(0, len(words), CHUNK_WORDS - CHUNK_OVERLAP):
+        pieces.append(Piece(page, section, " ".join(words[start:start + CHUNK_WORDS])))
+        if start + CHUNK_WORDS >= len(words):
+            break
+    return pieces
+
+
+def chunk_document(content: str) -> list[Piece]:
+    """Split text with [Page N] markers into chunks. A new page or heading always starts a new chunk."""
     parts = re.split(r"\[Page (\d+)\]\n", content)
-    chunks = []
+    pieces = []
+    section = None   # carries over to the next page until a new heading appears
 
     for number, page_text in zip(parts[1::2], parts[2::2]):
-        words = page_text.split()
-        for start in range(0, len(words), CHUNK_WORDS - CHUNK_OVERLAP):
-            chunks.append((int(number), " ".join(words[start:start + CHUNK_WORDS])))
-            if start + CHUNK_WORDS >= len(words):
-                break
-    return chunks
+        page = int(number)
+        lines = []
+        for line in page_text.splitlines():
+            line = line.strip()
+            if is_heading(line):
+                pieces += split_words(page, section, lines)
+                lines = []
+                section = line
+            else:
+                lines.append(line)
+        pieces += split_words(page, section, lines)
+    return pieces
 
 
 def embed_chunks(texts: list[str]) -> list[list[float]]:
@@ -74,13 +101,15 @@ def index_document(document_id: int) -> None:
     try:
         with INDEX_LOCK:
             pieces = chunk_document(content)
-            vectors = embed_chunks([text for _, text in pieces])
+            if not pieces:
+                raise ValueError("no text left to index")
+            vectors = embed_chunks([piece.text for piece in pieces])
 
         with SessionLocal() as db:
             document = db.get(models.Document, document_id)
             document.chunks = [
-                models.Chunk(page=page, content=text, embedding=vector)
-                for (page, text), vector in zip(pieces, vectors)
+                models.Chunk(page=piece.page, section=piece.section, content=piece.text, embedding=vector)
+                for piece, vector in zip(pieces, vectors)
             ]
             document.chunk_count = len(pieces)
             document.status = "ready"

@@ -2,7 +2,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
 
-from config import settings
+from app.config import settings
 
 # pool_pre_ping checks a connection before using it, so a database restart
 # doesn't cause "connection closed" errors

@@ -1,8 +1,10 @@
 from groq import Groq
 
-from config import settings
+from app.config import settings
 
 SYSTEM_PROMPT ="You are a helpful, friendly assistant. Answer clearly and concisely."
+# what users see; the real error only goes to the server logs
+LLM_ERROR = "The AI service isn't available right now. Please try again in a moment."
 
 
 client = Groq(api_key=settings.groq_api_key)
